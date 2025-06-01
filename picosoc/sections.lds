@@ -1,5 +1,7 @@
 #ifdef ICEBREAKER
 #  define MEM_TOTAL 0x20000 /* 128 KB */
+#elif UPDUINO3  //TODO / complete
+#  define MEM_TOTAL 0x20000 /* 128 KB */
 #elif HX8KDEMO
 #  define MEM_TOTAL 0x200 /* 2 KB */
 #else

@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#ifdef ICEBREAKER
+#if defined(ICEBREAKER) || defined(UPDUINO3)
 #  define MEM_TOTAL 0x20000 /* 128 KB */
 #elif HX8KDEMO
 #  define MEM_TOTAL 0x200 /* 2 KB */
@@ -152,6 +152,55 @@ void enable_flash_crm()
 	reg_spictrl |= 0x00100000;
 }
 #endif
+
+
+#ifdef UPDUINO3
+void set_flash_qspi_flag()
+{
+	uint8_t buffer[8];
+
+	// Read Configuration Registers (RDCR1 35h)
+	// Can't do Quad, only dual...So no enable bit to set.
+
+	// buffer[0] = 0x35;
+	// buffer[1] = 0x00; // rdata
+	// flashio(buffer, 2, 0);
+	// uint8_t sr2 = buffer[1];
+
+	// // Write Enable Volatile (50h) + Write Status Register 2 (31h)
+	// buffer[0] = 0x31;
+	// buffer[1] = sr2 | 2; // Enable QSPI
+	// flashio(buffer, 2, 0x50);
+}
+
+void set_flash_mode_spi()
+{
+	reg_spictrl = (reg_spictrl & ~0x007f0000) | 0x00000000;
+}
+
+void set_flash_mode_dual()
+{
+	reg_spictrl = (reg_spictrl & ~0x007f0000) | 0x00400000;
+}
+
+void set_flash_mode_quad()
+{
+   // NOPE
+//	reg_spictrl = (reg_spictrl & ~0x007f0000) | 0x00240000;
+}
+
+void set_flash_mode_qddr()
+{
+	// NOPE
+//	reg_spictrl = (reg_spictrl & ~0x007f0000) | 0x00670000;
+}
+
+void enable_flash_crm()
+{
+	reg_spictrl |= 0x00100000;
+}
+#endif
+
 
 // --------------------------------------------------------
 
@@ -386,7 +435,7 @@ void cmd_read_flash_regs()
 }
 #endif
 
-#ifdef ICEBREAKER
+#if defined(ICEBREAKER) || defined(UPDUINO3)
 uint8_t cmd_read_flash_reg(uint8_t cmd)
 {
 	uint8_t buffer[2] = {cmd, 0};
@@ -665,12 +714,15 @@ void cmd_echo()
 
 void main()
 {
+	return;
 	reg_leds = 31;
-	reg_uart_clkdiv = 104;
+//	reg_uart_clkdiv = 104;
+	// 52 = 115.2kbs
+	reg_uart_clkdiv = 52;
 	print("Booting..\n");
 
 	reg_leds = 63;
-	set_flash_qspi_flag();
+	set_flash_qspi_flag(); // NOP for Upduino3
 
 	reg_leds = 127;
 	while (getchar_prompt("Press ENTER to continue..\n") != '\r') { /* wait */ }

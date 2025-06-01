@@ -1,5 +1,5 @@
 
-CROSS=riscv32-unknown-elf-
+CROSS=riscv64-unknown-elf-
 CFLAGS=
 
 # ---- iCE40 HX8K Breakout Board ----
@@ -106,6 +106,38 @@ spiflash_tb.vvp: spiflash.v spiflash_tb.v
 
 cmos.log: spimemio.v simpleuart.v picosoc.v ../picorv32.v
 	yosys -l cmos.log -p 'synth -top picosoc; abc -g cmos2; opt -fast; stat' $^
+
+
+# Upduino3 builds
+
+upduino3.json: upduino3.v ice40up5k_spram.v spimemio.v simpleuart.v picosoc.v ../picorv32.v
+	yosys -ql upduino3.log -p 'synth_ice40 -dsp -top upduino3 -json upduino3.json' $^
+
+upduino3.asc: upduino3.pcf upduino3.json
+	nextpnr-ice40 --freq 13 --up5k --package sg48 --asc upduino3.asc --pcf upduino3.pcf --json upduino3.json
+
+upduino3.bin: upduino3.asc
+	icetime -d up5k -c 12 -mtr upduino3.rpt upduino3.asc
+	icepack upduino3.asc upduino3.bin
+
+upduino3prog: upduino3.bin upduino3_fw.bin
+	iceprog upduino3.bin
+	iceprog -o 1M upduino3_fw.bin
+
+upduino3prog_fw: upduino3_fw.bin
+	iceprog -o 1M upduino3_fw.bin
+
+upduino3_sections.lds: sections.lds
+	$(CROSS)cpp -P -DUPDUINO3 -o $@ $^
+
+upduino3_fw.elf: upduino3_sections.lds start.s firmware.c
+	$(CROSS)gcc $(CFLAGS) -DICEBREAKER -mabi=ilp32 -march=rv32ic -Wl,-Bstatic,-T,upduino3_sections.lds,--strip-debug -ffreestanding -nostdlib -o upduino3_fw.elf start.s firmware.c
+
+upduino3_fw.hex: upduino3_fw.elf
+	$(CROSS)objcopy -O verilog upduino3_fw.elf upduino3_fw.hex
+
+upduino3_fw.bin: upduino3_fw.elf
+	$(CROSS)objcopy -O binary upduino3_fw.elf upduino3_fw.bin
 
 # ---- Clean ----
 
