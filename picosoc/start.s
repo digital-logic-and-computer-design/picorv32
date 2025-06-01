@@ -35,21 +35,34 @@ addi x29, zero, 0
 addi x30, zero, 0
 addi x31, zero, 0
 
-# Update LEDs
+# Update LEDs: RGB off
 li a0, 0x03000000
-li a1, 1
+li a1, 0
 sw a1, 0(a0)
 
+# LEd & Key
+li a0, 0x04000000
+li a1, 0x1
+sw a1, 0(a0)
+
+
 # zero initialize entire scratchpad memory
+li a1, 0x04000004
 li a0, 0x00000000
 setmemloop:
 sw a0, 0(a0)
+sw a0, 0(a1)
+sw a0, 4(a1)
 addi a0, a0, 4
 blt a0, sp, setmemloop
 
 # Update LEDs
-li a0, 0x03000000
-li a1, 3
+# li a0, 0x03000000
+# li a1, 4
+# sw a1, 0(a0)
+
+li a0, 0x04000000
+li a1, 0x3
 sw a1, 0(a0)
 
 # copy data section
@@ -66,9 +79,13 @@ blt a1, a2, loop_init_data
 end_init_data:
 
 # Update LEDs
-li a0, 0x03000000
-li a1, 7
+# li a0, 0x03000000
+# li a1, 4
+# sw a1, 0(a0)
+li a0, 0x04000000
+li a1, 0x7
 sw a1, 0(a0)
+
 
 # zero-init bss section
 la a0, _sbss
@@ -81,8 +98,11 @@ blt a0, a1, loop_init_bss
 end_init_bss:
 
 # Update LEDs
-li a0, 0x03000000
-li a1, 15
+# li a0, 0x03000000
+# li a1, 2
+# sw a1, 0(a0)
+li a0, 0x04000000
+li a1, 0xF
 sw a1, 0(a0)
 
 # call main

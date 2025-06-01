@@ -15,3 +15,9 @@ set_io ledg_n 39
 set_io ledb_n 40
 
 set_io ledr_n 41
+
+set_io tm_clock 25
+
+set_io tm_dio 26
+
+set_io tm_strobe 23

@@ -110,7 +110,7 @@ cmos.log: spimemio.v simpleuart.v picosoc.v ../picorv32.v
 
 # Upduino3 builds
 
-upduino3.json: upduino3.v ice40up5k_spram.v spimemio.v simpleuart.v picosoc.v ../picorv32.v
+upduino3.json: upduino3.v ice40up5k_spram.v spimemio.v simpleuart.v picosoc.v ../picorv32.v ledandkey.sv
 	yosys -ql upduino3.log -p 'synth_ice40 -dsp -top upduino3 -json upduino3.json' $^
 
 upduino3.asc: upduino3.pcf upduino3.json

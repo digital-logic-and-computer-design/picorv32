@@ -48,8 +48,9 @@ module upduino3 (
 	// inout  flash_io2,
 	// inout  flash_io3
 
-	// Will need to add in I/O board at some point (memory mapped)
-
+    output tm_strobe,      // TM1638 Strobe
+    output tm_clock,       // TM1638 Clock
+    inout  tm_dio          // TM1638 Data
 );
 	parameter integer MEM_WORDS = 32768;
 
@@ -109,6 +110,23 @@ module upduino3 (
 	reg [31:0] gpio;
 	assign leds = gpio[7:0];
 
+    // **** Display module interface signals & module
+    wire [7:0] display0, display1, display2, display3, display4, display5, display6, display7, bleds;
+    wire [7:0] keys;
+    // // ************************************************
+    ledandkey ledAndKey(.clock(clk), .reset(~resetn),
+                        .tm_strobe(tm_strobe), .tm_clock(tm_clock), .tm_dio(tm_dio),
+                        .display0(display0),
+                        .display1(display1),
+                        .display2(display2),
+                        .display3(display3),
+                        .display4(display4),
+                        .display5(display5),
+                        .display6(display6),
+                        .display7(display7),
+                        .leds(bleds),
+                        .keys(keys));
+
 	always @(posedge clk) begin
 		if (!resetn) begin
 			gpio <= 0;
@@ -122,6 +140,39 @@ module upduino3 (
 				if (iomem_wstrb[1]) gpio[15: 8] <= iomem_wdata[15: 8];
 				if (iomem_wstrb[2]) gpio[23:16] <= iomem_wdata[23:16];
 				if (iomem_wstrb[3]) gpio[31:24] <= iomem_wdata[31:24];
+			end
+			// 0x04 00 00 XX = Led&Key
+			if (iomem_valid && !iomem_ready && iomem_addr[31:24] == 8'h 04) begin
+				iomem_ready <= 1;
+				// Address
+				//    00->03 are LEDs (only 00 used),
+				//    04->07 are displays 0-4,
+				//    07->0A are displays 5-7
+				//    0B is keys
+				// a
+				case(iomem_addr[3:2])
+					2'b00: begin
+						iomem_rdata <= bleds[7:0]; // LEDs
+						if (iomem_wstrb[0]) bleds[ 7: 0] <= iomem_wdata[ 7: 0];
+					end
+					2'b01: begin
+						iomem_rdata <= {display3, display2, display1, display0}; // Displays 3-0
+						if (iomem_wstrb[0]) display0 <= iomem_wdata[ 7: 0];
+						if (iomem_wstrb[1]) display1 <= iomem_wdata[ 15: 8];
+						if (iomem_wstrb[2]) display2 <= iomem_wdata[ 23: 16];
+						if (iomem_wstrb[3]) display3 <= iomem_wdata[ 31: 24];
+					end
+					2'b10: begin
+						iomem_rdata <= {display7, display6, display5, display4}; // Displays 3-0
+						if (iomem_wstrb[0]) display4 <= iomem_wdata[ 7: 0];
+						if (iomem_wstrb[1]) display5 <= iomem_wdata[ 15: 8];
+						if (iomem_wstrb[2]) display6 <= iomem_wdata[ 23: 16];
+						if (iomem_wstrb[3]) display7 <= iomem_wdata[ 31: 24];
+					end
+					2'b11: begin
+						iomem_rdata <= keys; // Keys
+					end
+				endcase
 			end
 		end
 	end
