@@ -22,7 +22,7 @@
  // TODOs: LED&Key board;  RGB Led drivers
 
 `ifdef PICOSOC_V
-`error "icebreaker.v must be read before picosoc.v!"
+`error "upduino3.v must be read before picosoc.v!"
 `endif
 
 `define PICOSOC_MEM ice40up5k_spram
@@ -44,7 +44,7 @@ module upduino3 (
 	output flash_csb,
 	output flash_clk,
 	inout  flash_io0,
-	inout  flash_io1,
+	inflout  flash_io1,
 	// inout  flash_io2,
 	// inout  flash_io3
 

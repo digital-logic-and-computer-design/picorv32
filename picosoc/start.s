@@ -1,6 +1,10 @@
-.section .text
+.section .bootloader,
 
 start:
+# Update LEDs: RGB off
+li a0, 0x03000000
+li a1, 0
+sw a1, 0(a0)
 
 # zero-initialize register file
 addi x1, zero, 0
@@ -35,12 +39,8 @@ addi x29, zero, 0
 addi x30, zero, 0
 addi x31, zero, 0
 
-# Update LEDs: RGB off
-li a0, 0x03000000
-li a1, 0
-sw a1, 0(a0)
 
-# LEd & Key
+# LED & Key
 li a0, 0x04000000
 li a1, 0x1
 sw a1, 0(a0)
@@ -69,6 +69,9 @@ sw a1, 0(a0)
 la a0, _sidata
 la a1, _sdata
 la a2, _edata
+# la a0, _sirodata # _sidata
+# la a1, _srodata  # _sdata
+# la a2, _erodata  # _edata
 bge a1, a2, end_init_data
 loop_init_data:
 lw a3, 0(a0)
@@ -177,3 +180,4 @@ ret
 
 .balign 4
 flashio_worker_end:
+

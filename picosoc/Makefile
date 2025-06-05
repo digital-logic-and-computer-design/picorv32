@@ -109,9 +109,8 @@ cmos.log: spimemio.v simpleuart.v picosoc.v ../picorv32.v
 
 
 # Upduino3 builds
-
 upduino3.json: upduino3.v ice40up5k_spram.v spimemio.v simpleuart.v picosoc.v ../picorv32.v ledandkey.sv
-	yosys -ql upduino3.log -p 'synth_ice40 -dsp -top upduino3 -json upduino3.json' $^
+	yosys -ql upduino3.log -p 'synth_ice40 -dsp -top upduino3 -json upduino3.json ; tee -q -o upduino3.stats.json stat -json;' $^
 
 upduino3.asc: upduino3.pcf upduino3.json
 	nextpnr-ice40 --freq 13 --up5k --package sg48 --asc upduino3.asc --pcf upduino3.pcf --json upduino3.json
@@ -131,13 +130,13 @@ upduino3_sections.lds: sections.lds
 	$(CROSS)cpp -P -DUPDUINO3 -o $@ $^
 
 upduino3_fw.elf: upduino3_sections.lds start.s firmware.c
-	$(CROSS)gcc $(CFLAGS) -DICEBREAKER -mabi=ilp32 -march=rv32ic -Wl,-Bstatic,-T,upduino3_sections.lds,--strip-debug -ffreestanding -nostdlib -o upduino3_fw.elf start.s firmware.c
+	$(CROSS)gcc $(CFLAGS) -DICEBREAKER -mabi=ilp32 -march=rv32ic -Wl,-Bstatic,-T,upduino3_sections.lds,--strip-debug,-N -ffreestanding -nostdlib -o upduino3_fw.elf start.s firmware.c
 
 upduino3_fw.hex: upduino3_fw.elf
 	$(CROSS)objcopy -O verilog upduino3_fw.elf upduino3_fw.hex
 
 upduino3_fw.bin: upduino3_fw.elf
-	$(CROSS)objcopy -O binary upduino3_fw.elf upduino3_fw.bin
+	$(CROSS)objcopy -O binary --set-section-flags .bootloader=alloc,load upduino3_fw.elf upduino3_fw.bin
 
 # ---- Clean ----
 

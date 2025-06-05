@@ -1,6 +1,6 @@
 #ifdef ICEBREAKER
 #  define MEM_TOTAL 0x20000 /* 128 KB */
-#elif UPDUINO3  //TODO / complete
+#elif UPDUINO3
 #  define MEM_TOTAL 0x20000 /* 128 KB */
 #elif HX8KDEMO
 #  define MEM_TOTAL 0x200 /* 2 KB */
@@ -16,15 +16,14 @@ MEMORY
 
 SECTIONS {
     /* The program code and other data goes into FLASH */
-    .text :
+    .bootloader () :
     {
         . = ALIGN(4);
-        *(.text)           /* .text sections (code) */
-        *(.text*)          /* .text* sections (code) */
-        *(.rodata)         /* .rodata sections (constants, strings, etc.) */
-        *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
-        *(.srodata)        /* .rodata sections (constants, strings, etc.) */
-        *(.srodata*)       /* .rodata* sections (constants, strings, etc.) */
+        *(.bootloader)
+
+
+
+
         . = ALIGN(4);
         _etext = .;        /* define a global symbol at end of code */
         _sidata = _etext;  /* This is used by the startup in order to initialize the .data secion */
@@ -35,12 +34,23 @@ SECTIONS {
     The program executes knowing that the data is in the RAM
     but the loader puts the initial values in the FLASH (inidata).
     It is one task of the startup to copy the initial values from FLASH to RAM. */
-    .data : AT ( _sidata )
+    .data : AT( _sidata )
     {
         . = ALIGN(4);
         _sdata = .;        /* create a global symbol at data start; used by startup code in order to initialise the .data section in RAM */
         _ram_start = .;    /* create a global symbol at ram start for garbage collector */
         . = ALIGN(4);
+
+        *(.text)           /* .text sections (code) */
+        *(.text*)          /* .text* sections (code) */
+
+
+        *(.rodata)         /* .rodata sections (constants, strings, etc.) */
+        *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
+        *(.srodata)        /* .rodata sections (constants, strings, etc.) */
+        *(.srodata*)       /* .rodata* sections (constants, strings, etc.) */
+
+
         *(.data)           /* .data sections */
         *(.data*)          /* .data* sections */
         *(.sdata)           /* .sdata sections */

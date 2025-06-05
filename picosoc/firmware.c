@@ -714,7 +714,15 @@ void cmd_echo()
 
 void main()
 {
+	volatile uint32_t *leds = (uint32_t*)0x04000000;
+	*leds = *leds | 0x30;
 	return;
+	/*
+
+	li a0, 0x04000000
+li a1, 0xF
+sw a1, 0(a0)
+	*/
 	reg_leds = 31;
 //	reg_uart_clkdiv = 104;
 	// 52 = 115.2kbs
