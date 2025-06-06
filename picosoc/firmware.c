@@ -35,7 +35,14 @@ extern uint32_t sram;
 #define reg_spictrl (*(volatile uint32_t*)0x02000000)
 #define reg_uart_clkdiv (*(volatile uint32_t*)0x02000004)
 #define reg_uart_data (*(volatile uint32_t*)0x02000008)
+
+// TODO: Cleanup
+// RGB LEDs
 #define reg_leds (*(volatile uint32_t*)0x03000000)
+#define leds (*(volatile uint32_t*)0x04000000)
+#define disp03 (*(volatile uint32_t*)0x04000004)
+#define disp47 (*(volatile uint32_t*)0x04000008)
+#define keys (*(volatile uint32_t*)0x0400000C)
 
 // --------------------------------------------------------
 
@@ -225,6 +232,17 @@ void print_hex(uint32_t v, int digits)
 		putchar(c);
 		digits = i;
 	}
+}
+
+void print_int(uint32_t v) {
+	char buf[8];
+	buf[7] = 0; // null-terminate
+	int i=6;
+	while(v>0) {
+		buf[i--] = '0' + (v % 10);
+		v /= 10;
+	}
+	print(&buf[i+1]); // print from first non-zero digit
 }
 
 void print_dec(uint32_t v)
@@ -714,9 +732,10 @@ void cmd_echo()
 
 void main()
 {
-	volatile uint32_t *leds = (uint32_t*)0x04000000;
+//	volatile uint32_t *leds = (uint32_t*)0x04000000;
 	int i=0;
-	*leds = *leds | 0x30;
+	int k=0;
+	leds = leds | 0x30;
 	/*
 
 	li a0, 0x04000000
@@ -724,29 +743,46 @@ li a1, 0xF
 sw a1, 0(a0)
 	*/
 	//reg_leds = 31;
-	reg_uart_clkdiv = 104;  // 57600
+	//reg_uart_clkdiv = 104;  // 57600
 	reg_uart_clkdiv = 625;  // 9600
 	// 52 = 115.2kbs
-//	reg_uart_clkdiv = 52;
-*leds = *leds | 0xF0;
+	//reg_uart_clkdiv = 52;
+    leds = leds | 0xF0;
 
 	print("Booting..\n");
-	for(i=0;i<1000000;i++) {
+
+
+	for(i=0;i<10;i++) {
 		// wait
-		print("k = ");
+		print("i = ");
 		print_dec(i);
 		print("\n");
+		// Delay loop.
+		for(k=0;k<125000;k++) {
+			disp03=k;
+			disp47=keys;
+		}
 	}
-*leds = *leds | 0xF0;
+	leds = leds | 0xF0;
+
+		print_int(1);
+	print("\n");
+	print_int(45);
+	print("\n");
+	print_int(456);
+	print("\n");
+	print_int(12456);
+	print("\n");
+	print_int(12345456);
+	print("\n");
 
 
-return;
 
-	reg_leds = 63;
-	set_flash_qspi_flag(); // NOP for Upduino3
+	// reg_leds = 63;
+	// set_flash_qspi_flag(); // NOP for Upduino3
 
-	reg_leds = 127;
-	while (getchar_prompt("Press ENTER to continue..\n") != '\r') { /* wait */ }
+	// reg_leds = 127;
+//	while (getchar_prompt("Press ENTER to continue..\n") != '\r') { /* wait */ }
 
 	print("\n");
 	print("  ____  _          ____         ____\n");
@@ -763,6 +799,7 @@ return;
 
 	//cmd_memtest(); // test overwrites bss and data memory
 	print("\n");
+return;
 
 	cmd_print_spi_state();
 	print("\n");

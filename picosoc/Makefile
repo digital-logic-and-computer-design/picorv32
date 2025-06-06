@@ -118,6 +118,7 @@ upduino3.asc: upduino3.pcf upduino3.json
 upduino3.bin: upduino3.asc
 	icetime -d up5k -c 12 -mtr upduino3.rpt upduino3.asc
 	icepack upduino3.asc upduino3.bin
+	ln -f upduino3.bin ../../images/upduino3.bin
 
 upduino3prog: upduino3.bin upduino3_fw.bin
 	iceprog upduino3.bin
@@ -130,14 +131,14 @@ upduino3_sections.lds: sections.lds
 	$(CROSS)cpp -P -DUPDUINO3 -o $@ $^
 
 upduino3_fw.elf: upduino3_sections.lds start.s firmware.c
-	$(CROSS)gcc $(CFLAGS) -DICEBREAKER -mabi=ilp32 -march=rv32ic -Wl,-Bstatic,-T,upduino3_sections.lds,--strip-debug,-N -ffreestanding -nostdlib -o upduino3_fw.elf start.s firmware.c
+	$(CROSS)gcc $(CFLAGS) -DICEBREAKER -mabi=ilp32 -march=rv32imc -Wl,-Bstatic,-T,upduino3_sections.lds,--strip-debug,-N -ffreestanding -nostdlib -o upduino3_fw.elf start.s firmware.c
 
 upduino3_fw.hex: upduino3_fw.elf
 	$(CROSS)objcopy -O verilog upduino3_fw.elf upduino3_fw.hex
 
 upduino3_fw.bin: upduino3_fw.elf
 	$(CROSS)objcopy -O binary --set-section-flags .bootloader=alloc,load upduino3_fw.elf upduino3_fw.bin
-
+	ln -f upduino3_fw.bin ../../images/upduino3_fw.bin
 # ---- Clean ----
 
 clean:

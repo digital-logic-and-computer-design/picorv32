@@ -82,10 +82,6 @@ module picosoc (
 	parameter [31:0] PROGADDR_RESET = 32'h 0010_0000; // 1 MB into flash
 	parameter [31:0] PROGADDR_IRQ = 32'h 0000_0000;
 
-	// TODO: Internal wires for UART
-	// TODO: Memory map I/O area to enable / disable UART connection vs. SPI 
-
-
 	reg [31:0] irq;
 	wire irq_stall = 0;
 	wire irq_uart = 0;

@@ -89,6 +89,10 @@ module upduino3 (
 	wire flash_io2_oe, flash_io2_do, flash_io2_di;
 	wire flash_io3_oe, flash_io3_do, flash_io3_di;
 	wire flash_clk_oe, flash_clk_do, flash_clk_di;
+
+	assign flash_io2_di = 1'b0; // Not used
+	assign flash_io3_di = 1'b0; // Not used
+
 	// Configure the FLASH memory pins
 	SB_IO #(
 		.PIN_TYPE(6'b 1010_01), // Output tristate; input
@@ -114,7 +118,7 @@ module upduino3 (
 	assign leds = gpio[7:0];
 
     // **** Display module interface signals & module
-    wire [7:0] display0, display1, display2, display3, display4, display5, display6, display7, bleds;
+    reg [7:0] display0, display1, display2, display3, display4, display5, display6, display7, bleds;
     wire [7:0] keys;
     // // ************************************************
     ledandkey ledAndKey(.clock(clk), .reset(~resetn),
@@ -152,8 +156,8 @@ module upduino3 (
 				// Address
 				//    00->03 are LEDs (only 00 used),
 				//    04->07 are displays 0-4,
-				//    07->0A are displays 5-7
-				//    0B is keys
+				//    08->0B are displays 5-7
+				//    0C->10 is keys (only 00 used)
 				// a
 				case(iomem_addr[3:2])
 					2'b00: begin
@@ -238,9 +242,9 @@ soc_ser_tx, ;
 
 	picosoc #(
 		.BARREL_SHIFTER(0),
-		.ENABLE_MUL(0),
-		.ENABLE_DIV(0),
-		.ENABLE_FAST_MUL(1),
+		.ENABLE_MUL(1),
+		.ENABLE_DIV(1),
+		.ENABLE_FAST_MUL(0),
 		.MEM_WORDS(MEM_WORDS)
 	) soc (
 		.clk          (clk         ),

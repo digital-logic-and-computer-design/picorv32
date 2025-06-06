@@ -208,3 +208,14 @@ sw zero, 4(a0)  # Update LEDs: RGB off
 loop:
 j loop
 
+.global __udivsi3
+__udivsi3:
+    divu a0, a0, a1
+    jr ra
+
+ .global __umodsi3
+__umodsi3:
+  /* Compute __udivdi3((uint32_t)a0, (uint32_t)a1); cast a1 to uint32_t.  */
+    remu a0, a0, a1
+    jr ra
+
