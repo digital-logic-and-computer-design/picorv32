@@ -116,10 +116,12 @@ sw zero, 0(a0)  # Disable FLASH
 # TODO: Enable UART
 
 
+# call main from _start (handles return)
 # call main
-call main
-loop:
-j loop
+# loop:
+# j loop
+call _start
+
 
 .global flashio_worker_begin
 .global flashio_worker_end
@@ -188,4 +190,16 @@ ret
 
 .balign 4
 flashio_worker_end:
+
+.text
+_start:
+# call main
+call main
+
+li a0, 0x04000004
+li a1, 0x5E3F5479 # dOnE
+sw a1, 0(a0)  # Update LEDs: RGB on
+sw zero, 4(a0)  # Update LEDs: RGB off
+loop:
+j loop
 
