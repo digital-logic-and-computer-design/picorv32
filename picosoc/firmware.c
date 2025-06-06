@@ -724,15 +724,16 @@ li a1, 0xF
 sw a1, 0(a0)
 	*/
 	//reg_leds = 31;
-	reg_uart_clkdiv = 104;
+	reg_uart_clkdiv = 104;  // 57600
+	reg_uart_clkdiv = 625;  // 9600
 	// 52 = 115.2kbs
-	reg_uart_clkdiv = 52;
+//	reg_uart_clkdiv = 52;
 *leds = *leds | 0xF0;
 
 	print("Booting..\n");
 	for(i=0;i<1000000;i++) {
 		// wait
-		print("i = ");
+		print("k = ");
 		print_dec(i);
 		print("\n");
 	}

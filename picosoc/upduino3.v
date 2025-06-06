@@ -42,9 +42,9 @@ module upduino3 (
 	// output ledg_n,
 
 	output flash_csb,
-	output flash_clk,
+	inout  flash_clk,
 	inout  flash_io0,
-	inflout  flash_io1,
+	inout  flash_io1,
 	// inout  flash_io2,
 	// inout  flash_io3
 
@@ -88,17 +88,20 @@ module upduino3 (
 	wire flash_io1_oe, flash_io1_do, flash_io1_di;
 	wire flash_io2_oe, flash_io2_do, flash_io2_di;
 	wire flash_io3_oe, flash_io3_do, flash_io3_di;
-
+	wire flash_clk_oe, flash_clk_do, flash_clk_di;
 	// Configure the FLASH memory pins
 	SB_IO #(
 		.PIN_TYPE(6'b 1010_01), // Output tristate; input
 		.PULLUP(1'b 0)          // No pullup
-	) flash_io_buf [1:0] (
-		.PACKAGE_PIN({flash_io1, flash_io0}),
-		.OUTPUT_ENABLE({flash_io1_oe, flash_io0_oe}),
-		.D_OUT_0({flash_io1_do, flash_io0_do}),
-		.D_IN_0({flash_io1_di, flash_io0_di})
+	) flash_io_buf [2:0] (
+		.PACKAGE_PIN({flash_io1, flash_io0, flash_clk}),
+		.OUTPUT_ENABLE({flash_io1_oe, flash_io0_oe, flash_clk_oe}),
+		.D_OUT_0({flash_io1_do, flash_io0_do, flash_clk_do}),
+		.D_IN_0({flash_io1_di, flash_io0_di, flash_clk_di})
 	);
+
+
+
 
 	wire        iomem_valid;
 	reg         iomem_ready;
@@ -126,6 +129,8 @@ module upduino3 (
                         .display7(display7),
                         .leds(bleds),
                         .keys(keys));
+
+	reg        uart_nFlash = 0;  // 0 = UART, 1 = Flash
 
 	always @(posedge clk) begin
 		if (!resetn) begin
@@ -174,8 +179,62 @@ module upduino3 (
 					end
 				endcase
 			end
+			// Support the UART / nFlash selection bit (0x05 00 00 00)
+			if (iomem_valid && !iomem_ready && iomem_addr == 32'h05000000) begin
+				iomem_ready <= 1;
+				if (iomem_wstrb[0]) uart_nFlash <= iomem_wdata[0];
+				iomem_rdata <= {31'b0, uart_nFlash}; // 0 = UART, 1 = Flash
+			end
 		end
 	end
+
+	// Combinational logic to control flash and UART pins
+
+/*
+
+  New signals
+
+ */
+
+	wire soc_ser_tx, soc_ser_rx;
+	wire soc_flash_clk, soc_flash_csb;
+	wire soc_flash_io0_oe, soc_flash_io0_do, soc_flash_io0_di;
+	wire soc_flash_io1_oe, soc_flash_io1_do, soc_flash_io1_di;
+
+
+
+/*
+flash_clk_oe
+soc_flash_clk  flash_clk_do
+soc_ser_rx     flash_clk_di
+flash_io0_oe   soc_flash_io0_oe
+flash_io1_oe   soc_flash_io1_oe
+flash_io0_do   soc_ser_tx, soc_flash_io0_do
+flash_csb 		soc_flash_csb
+soc_flash_io0_di flash_io0_di
+soc_flash_io1_di flash_io0_di
+flash_io1_do   soc_flash_io1_do
+flash_io1_di;
+soc_ser_tx, ;
+*/
+
+	// Pin-by-pin assign of inputs/outputs
+	assign flash_csb = uart_nFlash ? 1 : soc_flash_csb; // 1 for UART, Output for flash chip select
+	assign flash_clk_oe = uart_nFlash ? 0 : 1; // Input for UART rx, Output for flash clock
+	assign flash_clk_do = uart_nFlash ? 1 : soc_flash_clk; // 1 UART rx, Output for flash clock
+	assign soc_ser_rx = uart_nFlash ? flash_clk_di : 1'b1; // Input for UART rx, 1 for flash IO0
+
+	// DEBUG Only
+	assign ser_tx = soc_ser_tx; // Debug Ser out
+
+	assign flash_io0_oe = uart_nFlash ? 1 : soc_flash_io0_oe; // Output for UART tx or flash IO
+	assign flash_io0_do = uart_nFlash ? soc_ser_tx : soc_flash_io0_do; // UART tx or flash IO0
+
+	assign flash_io1_oe = uart_nFlash ? 0 : soc_flash_io1_oe; // Input / Unused for UART or flash IO
+	assign flash_io1_do = uart_nFlash ? 1'b1 : soc_flash_io1_do; // 1 for UART rx, Output for flash IO1
+
+	assign soc_flash_io0_di = uart_nFlash ? 0 : flash_io0_di;
+	assign soc_flash_io1_di = uart_nFlash ? 0 : flash_io1_di; // 1 for UART rx, Input for flash IO1
 
 	picosoc #(
 		.BARREL_SHIFTER(0),
@@ -187,26 +246,26 @@ module upduino3 (
 		.clk          (clk         ),
 		.resetn       (resetn      ),
 
-		.ser_tx       (ser_tx      ),
-		.ser_rx       (ser_rx      ),
+		.ser_tx       (soc_ser_tx      ),
+		.ser_rx       (soc_ser_rx      ),
 
-		.flash_csb    (flash_csb   ),
-		.flash_clk    (flash_clk   ),
+		.flash_csb    (soc_flash_csb   ),
+		.flash_clk    (soc_flash_clk   ),
 
-		.flash_io0_oe (flash_io0_oe),
-		.flash_io1_oe (flash_io1_oe),
-		.flash_io2_oe (flash_io2_oe),
-		.flash_io3_oe (flash_io3_oe),
+		.flash_io0_oe (soc_flash_io0_oe),
+		.flash_io1_oe (soc_flash_io1_oe),
+		.flash_io2_oe (flash_io2_oe), // Not used
+		.flash_io3_oe (flash_io3_oe), // Not used
 
-		.flash_io0_do (flash_io0_do),
-		.flash_io1_do (flash_io1_do),
-		.flash_io2_do (flash_io2_do),
-		.flash_io3_do (flash_io3_do),
+		.flash_io0_do (soc_flash_io0_do),
+		.flash_io1_do (soc_flash_io1_do),
+		.flash_io2_do (flash_io2_do),  // Not used
+		.flash_io3_do (flash_io3_do),  // Not used
 
-		.flash_io0_di (flash_io0_di),
-		.flash_io1_di (flash_io1_di),
-		.flash_io2_di (flash_io2_di),
-		.flash_io3_di (flash_io3_di),
+		.flash_io0_di (soc_flash_io0_di),
+		.flash_io1_di (soc_flash_io1_di),
+		.flash_io2_di (flash_io2_di),  // Not used
+		.flash_io3_di (flash_io3_di),  // Not used
 
 		.irq_5        (1'b0        ),
 		.irq_6        (1'b0        ),

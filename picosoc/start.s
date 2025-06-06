@@ -193,6 +193,11 @@ flashio_worker_end:
 
 .text
 _start:
+# Enable UART / Disable flash
+li a0, 0x05000000
+li a1, 1
+sw a1, 0(a0)
+
 # call main
 call main
 
