@@ -1,4 +1,4 @@
-.section .bootloader,
+.section .bootloader
 
 start:
 # Update LEDs: RGB off
@@ -107,6 +107,14 @@ end_init_bss:
 li a0, 0x04000000
 li a1, 0xF
 sw a1, 0(a0)
+
+# TODO: Disable FLASH & Enable UART
+li a0, 0x02000000
+sw zero, 0(a0)  # Disable FLASH
+# li a1, 0x80
+# sw a1, 3(a0)  # Disable Manual SPI Ctrl
+# TODO: Enable UART
+
 
 # call main
 call main

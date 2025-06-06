@@ -715,19 +715,31 @@ void cmd_echo()
 void main()
 {
 	volatile uint32_t *leds = (uint32_t*)0x04000000;
+	int i=0;
 	*leds = *leds | 0x30;
-	return;
 	/*
 
 	li a0, 0x04000000
 li a1, 0xF
 sw a1, 0(a0)
 	*/
-	reg_leds = 31;
-//	reg_uart_clkdiv = 104;
+	//reg_leds = 31;
+	reg_uart_clkdiv = 104;
 	// 52 = 115.2kbs
 	reg_uart_clkdiv = 52;
+*leds = *leds | 0xF0;
+
 	print("Booting..\n");
+	for(i=0;i<1000000;i++) {
+		// wait
+		print("i = ");
+		print_dec(i);
+		print("\n");
+	}
+*leds = *leds | 0xF0;
+
+
+return;
 
 	reg_leds = 63;
 	set_flash_qspi_flag(); // NOP for Upduino3

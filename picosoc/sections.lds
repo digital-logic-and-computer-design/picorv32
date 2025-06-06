@@ -16,13 +16,11 @@ MEMORY
 
 SECTIONS {
     /* The program code and other data goes into FLASH */
-    .bootloader () :
+    /* objcopy has to have special flags to ensure this is included. A bit awkward, but works. */
+    .bootloader :
     {
         . = ALIGN(4);
         *(.bootloader)
-
-
-
 
         . = ALIGN(4);
         _etext = .;        /* define a global symbol at end of code */
