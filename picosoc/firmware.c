@@ -36,6 +36,8 @@ extern uint32_t sram;
 #define reg_uart_clkdiv (*(volatile uint32_t*)0x02000004)
 #define reg_uart_data (*(volatile uint32_t*)0x02000008)
 
+
+
 // TODO: Cleanup
 // RGB LEDs
 #define reg_leds (*(volatile uint32_t*)0x03000000)
@@ -245,6 +247,23 @@ void print_int(uint32_t v) {
 	print(&buf[i+1]); // print from first non-zero digit
 }
 
+
+// void print_hex(uint32_t v) {
+// 	print("0x");
+// 	if (v == 0) {
+// 		putchar('0');
+// 		return;
+// 	}
+// 	while(v) {
+// 		int nibble = v & 0xF;
+// 		if (nibble < 10)
+// 			putchar('0' + nibble);
+// 		else
+// 			putchar('a' + nibble - 10);
+// 		v >>= 4;
+// 	}
+// }
+
 void print_dec(uint32_t v)
 {
 	if (v >= 1000) {
@@ -311,6 +330,50 @@ char getchar_prompt(char *prompt)
 	reg_leds = 0;
 	return c;
 }
+
+char getc() {
+	int c = reg_uart_data;
+	while(c==-1) {
+		c = reg_uart_data;
+	}
+	while(reg_uart_data!= -1) {
+		// wait for the next character
+	}
+	return (char)c;
+}
+
+char getc_echo() {
+	char c = getc();
+	putchar(c);
+	return c;
+}
+
+char fullLine[80];
+
+char *getLine() {
+	int i=0;
+	char c = getc();
+	while(c != '\r' && c != '\n' && i < 79) {
+		if (c == 8 || c == 127) { // backspace
+			if (i > 0) {
+				i--;
+				putchar('\b');
+				putchar(' ');
+				putchar('\b');
+			}
+		} else {
+			fullLine[i++] = c;
+			putchar(c);
+		}
+		c = getc();
+	}
+	if (c == '\r' || c == '\n') {
+		putchar('\n');
+	}
+	fullLine[i] = 0; // null-terminate
+	return fullLine;
+}
+
 
 char getchar()
 {
@@ -730,60 +793,65 @@ void cmd_echo()
 
 // --------------------------------------------------------
 
+void delay_1s() {
+	for(int k=0;k<125000;k++) {
+	}
+}
+
+void delay_10ms() {
+	for(int k=0;k<1250;k++) {
+	}
+}
+
+
+
+
 void main()
 {
-//	volatile uint32_t *leds = (uint32_t*)0x04000000;
+
 	int i=0;
 	int k=0;
-	leds = leds | 0x30;
-	/*
+	for(i=0;i<=0x80000;i++) {
+		reg_leds = ((i&0xFF)>254) ? i>>16 : 0; // blink LEDs (crazy bright! Be careful!)
+	}
+	reg_leds = 0x00; // turn off LED0
 
 
-	li a0, 0x04000000
-li a1, 0xF
-sw a1, 0(a0)
-	*/
-	//reg_leds = 31;
-	//reg_uart_clkdiv = 104;  // 57600
-	reg_uart_clkdiv = 625;  // 9600
-	// 52 = 115.2kbs
-	//reg_uart_clkdiv = 52;
-    leds = leds | 0xF0;
+	// LEDs
+	leds = 0x5A;
 
-	print("Booting..\n");
+	//
+	disp03 = 0x7930305C; // disp03
+	disp47 = 0x74; // disp47
 
-
-	for(i=0;i<10;i++) {
-		// wait
-		print("i = ");
-		print_dec(i);
-		print("\n");
-		// Delay loop.
-		for(k=0;k<125000;k++) {
-			disp03=k;
-			disp47=keys;
+	int last_keys = keys;
+	while(keys!=1) { // wait for key press
+		if(keys != last_keys) {
+			last_keys = keys;
+			leds = keys;
 		}
 	}
-	leds = leds | 0x30;
-
-		print_int(1);
-	print("\n");
-	print_int(45);
-	print("\n");
-	print_int(456);
-	print("\n");
-	print_int(12456);
-	print("\n");
-	print_int(12345456);
-	print("\n");
 
 
 
-	// reg_leds = 63;
-	// set_flash_qspi_flag(); // NOP for Upduino3
 
-	// reg_leds = 127;
-//	while (getchar_prompt("Press ENTER to continue..\n") != '\r') { /* wait */ }
+
+
+
+
+
+
+
+
+
+
+
+
+
+	// 104 = 57600
+	// 52 = 115.2kbs
+	reg_uart_clkdiv = 625;  // 9600
+	delay_10ms(); // wait for UART to be ready
 
 	print("\n");
 	print("  ____  _          ____         ____\n");
@@ -798,8 +866,25 @@ sw a1, 0(a0)
 	print(" KiB\n");
 	print("\n");
 
-	//cmd_memtest(); // test overwrites bss and data memory
-	print("\n");
+	print("What's your name?\n");
+	char *name = getLine();
+	print("Hello ");
+	print(name);
+	print("!\n");
+
+
+
+
+
+
+
+
+
+
+// for(int i=0;i<10;i++) {
+// }
+// 	//cmd_memtest(); // test overwrites bss and data memory
+// 	print("\n");
 return;
 
 	cmd_print_spi_state();

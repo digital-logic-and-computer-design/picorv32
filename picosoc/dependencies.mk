@@ -2,5 +2,5 @@
 upduino3.bin.shell:
 
 
-# label="Rebuild SOC Firmware" type=".shell" run="make upduino3_fw.bin"
+# label=" 0.0 Rebuild SOC Firmware" type=".shell" run="make upduino3_fw.bin"
 upduino3_fw.bin.shell:
