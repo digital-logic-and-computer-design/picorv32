@@ -39,12 +39,10 @@ addi x29, zero, 0
 addi x30, zero, 0
 addi x31, zero, 0
 
-
-# LED & Key
+# LED & Key: left light
 li a0, 0x04000000
 li a1, 0x1
 sw a1, 0(a0)
-
 
 # zero initialize entire scratchpad memory
 li a1, 0x04000004
@@ -52,15 +50,10 @@ li a0, 0x00000000
 setmemloop:
 sw a0, 0(a0)
 sw a0, 0(a1)
-sw a0, 4(a1)
 addi a0, a0, 4
 blt a0, sp, setmemloop
 
-# Update LEDs
-# li a0, 0x03000000
-# li a1, 4
-# sw a1, 0(a0)
-
+# Update LEDs: 2 lights
 li a0, 0x04000000
 li a1, 0x3
 sw a1, 0(a0)
@@ -69,9 +62,6 @@ sw a1, 0(a0)
 la a0, _sidata
 la a1, _sdata
 la a2, _edata
-# la a0, _sirodata # _sidata
-# la a1, _srodata  # _sdata
-# la a2, _erodata  # _edata
 bge a1, a2, end_init_data
 loop_init_data:
 lw a3, 0(a0)
@@ -81,14 +71,10 @@ addi a1, a1, 4
 blt a1, a2, loop_init_data
 end_init_data:
 
-# Update LEDs
-# li a0, 0x03000000
-# li a1, 4
-# sw a1, 0(a0)
+# Update LEDs: 3lights
 li a0, 0x04000000
 li a1, 0x7
 sw a1, 0(a0)
-
 
 # zero-init bss section
 la a0, _sbss
@@ -100,26 +86,12 @@ addi a0, a0, 4
 blt a0, a1, loop_init_bss
 end_init_bss:
 
-# Update LEDs
-# li a0, 0x03000000
-# li a1, 2
-# sw a1, 0(a0)
+# Update LEDs: 4 lights
 li a0, 0x04000000
 li a1, 0xF
 sw a1, 0(a0)
 
-# TODO: Disable FLASH & Enable UART
-li a0, 0x02000000
-sw zero, 0(a0)  # Disable FLASH
-# li a1, 0x80
-# sw a1, 3(a0)  # Disable Manual SPI Ctrl
-# TODO: Enable UART
-
-
-# call main from _start (handles return)
-# call main
-# loop:
-# j loop
+# Call _start & main  (WILL NOT RETURN)
 call _start
 
 
@@ -193,12 +165,30 @@ flashio_worker_end:
 
 .text
 _start:
-# Enable UART / Disable flash
+# Clear LEDs
+li a0, 0x03000000
+sw zero, 0(a0)  # Update LEDs: RGB off
+# Clear IO Board LEDs / 7-segments
+li a0, 0x04000000
+sw zero, 0(a0)  # Update LEDs: RGB off
+sw zero, 4(a0)  # Update LEDs: RGB off
+sw zero, 8(a0)  # Update LEDs: RGB off
+
+# Disable FLASH
+li a0, 0x02000000
+sw zero, 0(a0)  # Disable FLASH
+
+# Enable UART / Disconnect flash
 li a0, 0x05000000
 li a1, 1
 sw a1, 0(a0)
 
-# call main
+# call main (reset all used registers)
+addi a0, zero, 0
+addi a1, zero, 0
+addi a2, zero, 0
+addi a3, zero, 0
+addi a4, zero, 0
 call main
 
 li a0, 0x04000004
@@ -208,6 +198,10 @@ sw zero, 4(a0)  # Update LEDs: RGB off
 loop:
 j loop
 
+
+# ************************************************************************
+# ** RUNTIME SUPPORT
+# RISC-V GCC runtime library functions for 32-bit unsigned division and modulo
 .global __udivsi3
 __udivsi3:
     divu a0, a0, a1

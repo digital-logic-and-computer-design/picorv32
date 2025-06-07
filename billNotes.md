@@ -5,6 +5,7 @@ Use icebreaker board as example.  Targets in picorvsoc/icebreaker*
 
 .core files provide project structure...Used/created by???
 
+CSE 260M PicoSOC image is in 
 
 # Linking Images
 

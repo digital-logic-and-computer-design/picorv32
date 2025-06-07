@@ -738,6 +738,7 @@ void main()
 	leds = leds | 0x30;
 	/*
 
+
 	li a0, 0x04000000
 li a1, 0xF
 sw a1, 0(a0)
@@ -763,7 +764,7 @@ sw a1, 0(a0)
 			disp47=keys;
 		}
 	}
-	leds = leds | 0xF0;
+	leds = leds | 0x30;
 
 		print_int(1);
 	print("\n");
