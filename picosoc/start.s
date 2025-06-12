@@ -3,7 +3,7 @@
 start:
 # Update LEDs: RGB off
 li a0, 0x03000000
-li a1, 0
+li a1, 0x00000000  # Light white?
 sw a1, 0(a0)
 
 # zero-initialize register file

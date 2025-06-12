@@ -46,6 +46,8 @@ extern uint32_t sram;
 #define disp47 (*(volatile uint32_t*)0x04000008)
 #define keys (*(volatile uint32_t*)0x0400000C)
 
+#define MEM(location) (*(volatile uint32_t*)(location))
+
 // --------------------------------------------------------
 
 extern uint32_t flashio_worker_begin;
@@ -811,10 +813,17 @@ void main()
 
 	int i=0;
 	int k=0;
-	for(i=0;i<=0x80000;i++) {
-		reg_leds = ((i&0xFF)>254) ? i>>16 : 0; // blink LEDs (crazy bright! Be careful!)
+	for(k=0;k<=16;k+=8) {
+		for(i=0;i<=0xFF;i++) {
+			reg_leds = i << k;
+			delay_10ms();
+		}
+		for(i=0;i<=0xFF;i++) {
+			reg_leds = (0xFF-i) << k;
+			delay_10ms();
+		}
 	}
-	reg_leds = 0x00; // turn off LED0
+	reg_leds = 0x000000; // turn off LED0
 
 
 	// LEDs
@@ -831,10 +840,6 @@ void main()
 			leds = keys;
 		}
 	}
-
-
-
-
 
 
 
@@ -866,14 +871,33 @@ void main()
 	print(" KiB\n");
 	print("\n");
 
+
+	print("First inst. in RAM: ");
+	print_hex(MEM(0x04000004), 4);
+	delay_10ms(); // wait for UART to be ready
+	delay_10ms(); // wait for UART to be ready
+
 	print("What's your name?\n");
 	char *name = getLine();
 	print("Hello ");
 	print(name);
 	print("!\n");
 
+return;
 
 
+
+	// print("\nDumping RAM: ");
+	// for(int i=0;i<100;i+=4){
+	// 	print_hex(MEM(i), 4);
+	// 	print("\n");
+	// }
+	// // Fails because flash is disconnected.  Ok...Sanity check passed!
+	// print("\nDumping FLASH: ");
+	// for(int i=0;i<100;i+=4){
+	// 	print_hex(MEM(0x00100000+i), 4);
+	// 	print("\n");
+	// }
 
 
 
@@ -885,7 +909,6 @@ void main()
 // }
 // 	//cmd_memtest(); // test overwrites bss and data memory
 // 	print("\n");
-return;
 
 	cmd_print_spi_state();
 	print("\n");

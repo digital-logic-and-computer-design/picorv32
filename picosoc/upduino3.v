@@ -17,10 +17,6 @@
  *
  */
 
-
-
- // TODOs: LED&Key board;  RGB Led drivers
-
 `ifdef PICOSOC_V
 `error "upduino3.v must be read before picosoc.v!"
 `endif
@@ -28,9 +24,7 @@
 `define PICOSOC_MEM ice40up5k_spram
 
 module upduino3 (
-	// input clk,  // Clock will be internal
-
-	// TODO: Make Internal and shared with flash
+	// Included for potential debugging
 	output ser_tx,
 	input ser_rx,
 
@@ -38,15 +32,10 @@ module upduino3 (
 	output ledg_n,
 	output ledb_n,
 
-	// output ledr_n,
-	// output ledg_n,
-
 	output flash_csb,
 	inout  flash_clk,
 	inout  flash_io0,
 	inout  flash_io1,
-	// inout  flash_io2,
-	// inout  flash_io3
 
     output tm_strobe,      // TM1638 Strobe
     output tm_clock,       // TM1638 Clock
@@ -54,19 +43,7 @@ module upduino3 (
 );
 	parameter integer MEM_WORDS = 32768;
 
-/*
-
- flash_csb  must be 1 for UART
- flash_io0 is serial_txd
- flash_io1 is serial_rxd
-
-#set_io serial_txd 14 # FPGA transmit to USB  / MISO / flash_io0
-#set_io serial_rxd 15 # FPGA receive from USB / MOSI / flash_io1
-#set_io spi_cs 16 # Drive high to ensure that the SPI flash is disabled / flash_csb
-
-*/
 	wire flash_io2, flash_io3;  // Not used
-
 
     // 6MHz clock
 	wire clk;
@@ -78,11 +55,6 @@ module upduino3 (
 	always @(posedge clk) begin
 		reset_cnt <= reset_cnt + !resetn;
 	end
-
-	wire [7:0] leds;
-	assign ledr_n = ~leds[0];
-	assign ledg_n = ~leds[1];
-	assign ledb_n = ~leds[2];
 
 	wire flash_io0_oe, flash_io0_do, flash_io0_di;
 	wire flash_io1_oe, flash_io1_do, flash_io1_di;
@@ -104,9 +76,6 @@ module upduino3 (
 		.D_IN_0({flash_io1_di, flash_io0_di, flash_clk_di})
 	);
 
-
-
-
 	wire        iomem_valid;
 	reg         iomem_ready;
 	wire [3:0]  iomem_wstrb;
@@ -115,7 +84,6 @@ module upduino3 (
 	reg  [31:0] iomem_rdata;
 
 	reg [31:0] gpio;
-	assign leds = gpio[7:0];
 
     // **** Display module interface signals & module
     reg [7:0] display0, display1, display2, display3, display4, display5, display6, display7, bleds;
@@ -135,20 +103,25 @@ module upduino3 (
                         .keys(keys));
 
 	reg        uart_nFlash = 0;  // 0 = UART, 1 = Flash
+	reg [7:0] red_on, green_on, blue_on; // LEDs
 
+	// General I/O memory interface
 	always @(posedge clk) begin
 		if (!resetn) begin
 			gpio <= 0;
+			red_on <= 0;
+			green_on <= 0;
+			blue_on <= 0;
 		end else begin
 			iomem_ready <= 0;
-			// 0x03 00 00 00 = GPIO (LEDs)
+			// 0x03 00 00 00 = GPIO (RGB LEDs)
 			if (iomem_valid && !iomem_ready && iomem_addr[31:24] == 8'h 03) begin
 				iomem_ready <= 1;
-				iomem_rdata <= gpio;
-				if (iomem_wstrb[0]) gpio[ 7: 0] <= iomem_wdata[ 7: 0];
-				if (iomem_wstrb[1]) gpio[15: 8] <= iomem_wdata[15: 8];
-				if (iomem_wstrb[2]) gpio[23:16] <= iomem_wdata[23:16];
-				if (iomem_wstrb[3]) gpio[31:24] <= iomem_wdata[31:24];
+				iomem_rdata <= {8'b0, red_on, green_on, blue_on}; // Read GPIO
+				if (iomem_wstrb[0]) blue_on <= iomem_wdata[ 7: 0];
+				if (iomem_wstrb[1]) green_on <= iomem_wdata[15: 8];
+				if (iomem_wstrb[2]) red_on <= iomem_wdata[23:16];
+				// if (iomem_wstrb[3]) gpio[31:24] <= iomem_wdata[31:24];
 			end
 			// 0x04 00 00 XX = Led&Key
 			if (iomem_valid && !iomem_ready && iomem_addr[31:24] == 8'h 04) begin
@@ -187,40 +160,57 @@ module upduino3 (
 			if (iomem_valid && !iomem_ready && iomem_addr == 32'h05000000) begin
 				iomem_ready <= 1;
 				if (iomem_wstrb[0]) uart_nFlash <= iomem_wdata[0];
-				iomem_rdata <= {31'b0, uart_nFlash}; // 0 = UART, 1 = Flash
+				iomem_rdata <= {31'b0, uart_nFlash}; // 1 = UART, 0 = Flash
 			end
 		end
 	end
 
+	reg [7:0] red_count, green_count, blue_count; // LED counters
+	reg red_state, green_state, blue_state; // LED states
+
+	// RGB LED PWM control
+	always @(posedge clk) begin
+		if(!resetn) begin
+			red_count <= 0;
+			green_count <= 0;
+			blue_count <= 0;
+		end
+		else begin
+			// Simple LED blink counters
+			red_count <= red_count + 1;
+			green_count <= green_count + 1;
+			blue_count <= blue_count + 1;
+
+			// "OFF" mode has priority.
+			if(red_count==red_on) begin
+				red_state <= 0; // Turn off red LED
+			end else if(red_count==0)begin
+				red_state <= 1; // Turn on red LED
+			end
+			if(green_count==green_on) begin
+				green_state <= 0; // Turn off green LED
+			end else if(green_count==0)begin
+				green_state <= 1; // Turn on green LED
+			end
+			if(blue_count==blue_on) begin
+				blue_state <= 0; // Turn off blue LED
+			end else if(blue_count==0)begin
+				blue_state <= 1; // Turn on blue LED
+			end
+		end
+	end
+	// LEDs are active low
+	assign ledr_n = ~red_state;
+	assign ledg_n = ~green_state;
+	assign ledb_n = ~blue_state;
+
+
 	// Combinational logic to control flash and UART pins
-
-/*
-
-  New signals
-
- */
-
 	wire soc_ser_tx, soc_ser_rx;
 	wire soc_flash_clk, soc_flash_csb;
 	wire soc_flash_io0_oe, soc_flash_io0_do, soc_flash_io0_di;
 	wire soc_flash_io1_oe, soc_flash_io1_do, soc_flash_io1_di;
 
-
-
-/*
-flash_clk_oe
-soc_flash_clk  flash_clk_do
-soc_ser_rx     flash_clk_di
-flash_io0_oe   soc_flash_io0_oe
-flash_io1_oe   soc_flash_io1_oe
-flash_io0_do   soc_ser_tx, soc_flash_io0_do
-flash_csb 		soc_flash_csb
-soc_flash_io0_di flash_io0_di
-soc_flash_io1_di flash_io0_di
-flash_io1_do   soc_flash_io1_do
-flash_io1_di;
-soc_ser_tx, ;
-*/
 
 	// Pin-by-pin assign of inputs/outputs
 	assign flash_csb = uart_nFlash ? 1 : soc_flash_csb; // 1 for UART, Output for flash chip select

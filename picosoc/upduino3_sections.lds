@@ -4,8 +4,19 @@ MEMORY
     RAM (xrw) : ORIGIN = 0x00000000, LENGTH = 0x20000
 }
 SECTIONS {
-    .text :
+    .bootloader :
     {
+        . = ALIGN(4);
+        *(.bootloader)
+        . = ALIGN(4);
+        _etext = .;
+        _sidata = _etext;
+    } >FLASH
+    .data : AT( _sidata )
+    {
+        . = ALIGN(4);
+        _sdata = .;
+        _ram_start = .;
         . = ALIGN(4);
         *(.text)
         *(.text*)
@@ -13,16 +24,6 @@ SECTIONS {
         *(.rodata*)
         *(.srodata)
         *(.srodata*)
-        . = ALIGN(4);
-        _etext = .;
-        _sidata = _etext;
-    } >FLASH
-    .data : AT ( _sidata )
-    {
-        . = ALIGN(4);
-        _sdata = .;
-        _ram_start = .;
-        . = ALIGN(4);
         *(.data)
         *(.data*)
         *(.sdata)

@@ -5,7 +5,36 @@ Use icebreaker board as example.  Targets in picorvsoc/icebreaker*
 
 .core files provide project structure...Used/created by???
 
-CSE 260M PicoSOC image is in 
+CSE 260M PicoSOC image is in
+
+# Memory Map
+
+RAM:   0x00000000 - 0x00020000
+Flash: 0x00100000 - ???
+
+0-?   Text (instructions) and constants
+Stack starts at 0x200000
+
+
+Memory Mapped I/O:
+
+
+And value for "x" will work
+
+0x02000000: FLASH Interface config
+0x02000004: UART Clock divider
+0x02000008: UART Data (write to transmit (blocking); read to...read!)
+
+0x03xxxxxx: RGB LED
+
+0x04xxxxx0: LED & Key LEDs
+0x04xxxxx4: LED & Key displays 0-3
+0x04xxxxx8: LED & Key displays 4-7
+0x04xxxxxC: LED & Key keys
+
+0x05000000: Enable FLASH / Disable UART  (0 in LSB = Flash, or 1 for UART)
+
+
 
 # Linking Images
 
@@ -15,6 +44,7 @@ From picosvsoc directory:
 ln -f upduino3_fw.bin ../../images/upduino3_fw.bin
 ln -f upduino3.bin ../../images/upduino3.bin
 ```
+
 
 # ICEBREAKER
 
