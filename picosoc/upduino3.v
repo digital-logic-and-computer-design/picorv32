@@ -165,38 +165,37 @@ module upduino3 (
 		end
 	end
 
-	reg [7:0] red_count, green_count, blue_count; // LED counters
+	reg [16:0] rgb_count; // RGB LED counter
 	reg red_state, green_state, blue_state; // LED states
-
+	wire [7:0] rgb_match = rgb_count[15:8];
 	// RGB LED PWM control
 	always @(posedge clk) begin
 		if(!resetn) begin
-			red_count <= 0;
-			green_count <= 0;
-			blue_count <= 0;
+			rgb_count <= 0;
 		end
 		else begin
 			// Simple LED blink counters
-			red_count <= red_count + 1;
-			green_count <= green_count + 1;
-			blue_count <= blue_count + 1;
+			rgb_count <= rgb_count + 1;
 
-			// "OFF" mode has priority.
-			if(red_count==red_on) begin
-				red_state <= 0; // Turn off red LED
-			end else if(red_count==0)begin
-				red_state <= 1; // Turn on red LED
+			// If at a major multiple (and less than 50% duty cycle)
+			if(rgb_count[16]==0 && rgb_count[7:0]==0) begin
+				if(rgb_match==red_on) begin
+					red_state <= 0; // Reset red LED counter
+				end else if(rgb_match==0) begin
+					red_state <= 1;
+				end
+				if(rgb_match==green_on) begin
+					green_state <= 0; // Reset green LED counter
+				end else if(rgb_match==0) begin
+					green_state <= 1;
+				end
+				if(rgb_match==blue_on) begin
+					blue_state <= 0; // Reset blue LED counter
+				end else if(rgb_match==0) begin
+					blue_state <= 1;
+				end
 			end
-			if(green_count==green_on) begin
-				green_state <= 0; // Turn off green LED
-			end else if(green_count==0)begin
-				green_state <= 1; // Turn on green LED
-			end
-			if(blue_count==blue_on) begin
-				blue_state <= 0; // Turn off blue LED
-			end else if(blue_count==0)begin
-				blue_state <= 1; // Turn on blue LED
-			end
+
 		end
 	end
 	// LEDs are active low
@@ -235,7 +234,9 @@ module upduino3 (
 		.ENABLE_MUL(1),
 		.ENABLE_DIV(1),
 		.ENABLE_FAST_MUL(0),
-		.MEM_WORDS(MEM_WORDS)
+		.MEM_WORDS(MEM_WORDS),
+		.ENABLE_IRQ_QREGS(1),
+		.PROGADDR_IRQ(32'h 0000_0000), // IRQ vector address
 	) soc (
 		.clk          (clk         ),
 		.resetn       (resetn      ),
