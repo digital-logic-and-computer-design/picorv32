@@ -130,8 +130,8 @@ upduino3prog_fw: upduino3_fw.bin
 upduino3_sections.lds: sections.lds
 	$(CROSS)cpp -P -DUPDUINO3 -o $@ $^
 
-upduino3_fw.elf: upduino3_sections.lds start.s firmware.c
-	$(CROSS)gcc $(CFLAGS) -DICEBREAKER -mabi=ilp32 -march=rv32imc -Wl,-Bstatic,-T,upduino3_sections.lds,--strip-debug,-N -ffreestanding -nostdlib -o upduino3_fw.elf start.s firmware.c
+upduino3_fw.elf: upduino3_sections.lds start.S firmware.c
+	$(CROSS)gcc $(CFLAGS) -DICEBREAKER -mabi=ilp32 -march=rv32imc -Wl,-Bstatic,-T,upduino3_sections.lds,--strip-debug,-N -ffreestanding -nostdlib -o upduino3_fw.elf start.S firmware.c
 
 upduino3_fw.hex: upduino3_fw.elf
 	$(CROSS)objcopy -O verilog upduino3_fw.elf upduino3_fw.hex
